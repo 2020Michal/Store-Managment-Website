@@ -1,0 +1,360 @@
+﻿@model project3.Models.IceCream
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+@Styles.Render("~/Content/styles.css")
+<script type="text/javascript">
+
+    //API CALL IMAAGA
+    //check if it's an ice cream image
+    function imaagaApiCall() {
+        var icecreamImage = $('#icecreamImage').val();
+        var messageAlertImage = document.getElementById("alertOfReuiredImageField");
+        messageAlertImage.innerText = "";
+        fetchImage(icecreamImage)
+    }
+    function fetchImage(icecreamImage) {
+        $.ajax({
+            type: 'GET',
+            async: false,
+            headers: {
+                'Authorization': "Basic YWNjXzdhMWIyMzVjNDNmZmViYjowMDkxNWFhYjkyMWEyMDNlOGRiYTg3ZTk1YzIyYjMxZA=="
+            },
+            dataType: "json",
+            contentType: "application/json; charest=utf-8",
+            url: `https://api.imagga.com/v2/tags?image_url=${icecreamImage}&version=2`,
+            success: function (results)
+            {
+                var tags = [];
+                results.result.tags.slice(0, 6).forEach(function (item) {
+                    tags.push(item.tag.en);
+                })
+                var isThisIceImage = 0;
+                ["ice", "ice cream", "dessert", "food", "yogurt", "dairy, product", "sweet", "cream"].forEach(function (item)
+                {
+                        if (tags.includes(item))
+                        {
+                            isThisIceImage++;
+
+                        }
+                })
+                if (isThisIceImage<2) {
+                    var messageAlertImage = document.getElementById("alertOfReuiredImageField");
+                    var text = "Unsuitable Image. Please Put An Icecream Image";
+                    messageAlertImage.innerText = text;
+                    return false;
+                    console.log(results);
+                }
+            },
+            error: function (error) {
+                console.log(error);
+            }
+
+        })
+    }
+
+    function addReviewBtn(reviewBtn) {
+
+        //alert required field
+        var flag = true;
+        var rate = document.getElementById("star1");
+        var messageAlertRate = document.getElementById("alertOfReuiredRatingField");
+        if (rate.className == "fa fa-star unchecked") {
+            var text = "*Required Field*";
+            messageAlertRate.innerText = text;
+            flag = false;
+        }
+        var imageOfIcecream = document.getElementById("icecreamImage");
+        var messageAlertImage = document.getElementById("alertOfReuiredImageField");
+        if (imageOfIcecream.value == "")
+        {
+            var text = "*Required Field*";
+            messageAlertImage.innerText = text;
+            flag = false;
+        }
+        if (!flag)
+        {
+            return flag;
+        }
+
+        //calculate rating score
+        var sumOfRate = 0;
+        for (var i = 1; i <= 5; i++) {
+            var cur = document.getElementById("star" + i)
+            if (cur.className == "fa fa-star checked") {
+                sumOfRate = sumOfRate + 1;
+            }
+        }
+
+        var commentedBy = $("#name");
+        var imageUrlOfUser = $("#yourImage");
+        var imageUrl = $("#icecreamImage").val();
+        var message = $("#comment").val();
+        var date = new Date();
+        var fixedDate = [date.getDate(), date.getMonth() + 1, date.getFullYear()].join('/') + " "
+            + [date.getHours(), date.getMinutes(), date.getSeconds()].join(':');
+        //defualt values to empty fields
+        if (commentedBy.val() == "")
+        {
+            commentedBy.val("User user");
+        }
+        if (imageUrlOfUser.val() == "") {
+            imageUrlOfUser.val("https://www.eyogi.in/uploads/images/user.jpg");
+        }
+
+        var review = {
+            Rating: sumOfRate,
+            IdOfIceCream: `${reviewBtn.id}`,
+            CommentedBy: commentedBy.val(),
+            ImageUrl: imageUrl,
+            ImageUrlOfUser: imageUrlOfUser.val(),
+            Message: message,
+            DateTimeStamp: fixedDate
+        }
+        addReviewLocally(review);
+        updateRatingLocally(review);
+        resetAddReviewForm();
+        fetchReview(review);
+    }
+
+    function fetchReview(review) {
+        $.ajax({
+            type: "POST",
+            url: "/Review/Create",
+            data: JSON.stringify(review),
+            dataType: "JSON",
+            contentType: "application/json; charest=utf-8",
+            success: function (data) {
+                console.log(data);
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        })
+    }
+   
+    function addReviewLocally(newReview)
+    {
+        var htmlItem =
+            `<li>
+                <div class="commenterImage">
+                    <img src="${newReview.ImageUrlOfUser}"  />
+                </div>
+
+                <div class="commentText">
+                    <p> ${newReview.CommentedBy}</p>
+
+             <div>`
+
+               if (newReview.Rating > 0)
+               {
+                   htmlItem +=`<div class="fa fa-star checked"></div>`
+                }
+
+              else
+               {
+                   htmlItem +=`<div class="fa fa-star unchecked"></div>`
+
+               }
+
+                if (newReview.Rating > 1)
+                {
+                            htmlItem += `<div class="fa fa-star checked"></div>`
+                }
+
+                else
+                {
+                            htmlItem += `<div class="fa fa-star unchecked"></div>`
+
+                }
+                if (newReview.Rating > 2)
+                {
+                            htmlItem += `<div class="fa fa-star checked"></div>`
+                }
+
+                else
+                {
+                            htmlItem += `<div class="fa fa-star unchecked"></div>`
+
+                }
+                if (newReview.Rating > 3)
+                {
+                            htmlItem += `<div class="fa fa-star checked"></div>`
+                }
+
+                else
+                {
+                            htmlItem += `<div class="fa fa-star unchecked"></div>`
+
+                }
+
+              if (newReview.Rating > 4)
+               {
+                    htmlItem += `<div class="fa fa-star checked"></div>`
+                }
+
+              else
+              {
+                    htmlItem += `<div class="fa fa-star unchecked"></div>`
+
+               }
+               htmlItem +=
+            `</div >
+                <div>
+                <p> ${newReview.Message}</p>
+                <div class="zoom-less">
+               <img src="${newReview.ImageUrl}" width="60" height="70" />
+                </div>
+                </div>
+                <span class="date sub-text"> ${newReview.DateTimeStamp}</span>
+            </div>
+
+            </li>`
+                  $("#commentList").prepend(htmlItem);
+    }
+
+    
+    function updateRatingLocally(newReview)
+    {
+        var numOfReviews = @((@Model.IceReview.Count));//number of current reviews
+        var ratingScore = $("#ratingScore");
+        var currentAverage = @((@Model.Rating));
+        var newRate = newReview.Rating;
+        var newAverage= (newRate + currentAverage * numOfReviews) / (numOfReviews + 1);
+        ratingScore[0].textContent = `${newAverage.toFixed(2)} star(s)`
+
+    }
+
+    function resetAddReviewForm() {
+        document.getElementById("myForm").reset();
+
+        for (var i = 1; i <= 5; i++) {
+            var cur = document.getElementById("star" + i)
+            cur.className = "fa fa-star unchecked"
+        }
+    }
+
+    function starRating(ths, sno) {
+        //remove alert of required field
+        var messageAlert = document.getElementById("alertOfReuiredRatingField");
+        messageAlert.innerText = "";
+        for (var i = 1; i <= 5; i++) {
+            var cur = document.getElementById("star" + i)
+            cur.className = "fa fa-star unchecked"
+        }
+
+        for (var i = 1; i <= sno; i++) {
+            var cur = document.getElementById("star" + i)
+            if (cur.className == "fa fa-star unchecked") {
+                cur.className = "fa fa-star checked"
+            }
+        }
+
+    }
+
+</script>
+
+
+<div class="container">
+    <div class="row">
+        <!--Ice Cream Details-->
+        <div class="col-xs-8">
+            <div class="col-xs-4 item-photo zoom-less">
+                <img style="width:200px;" src="@(Model.ImageUrl)" />
+            </div>
+            <div class="col-xs-5" style="border:0px solid gray">
+                <h3> @(Model.Name)</h3>
+                <div>
+                    <div>@(Model.Description)</div>
+                    <h4>Average users rating:</h4>
+                    <h2 id="ratingScore" class="bold padding-bottom-7">@(Model.Rating) <small>star(s)</small></h2>
+                    <div style="color:red"> @ViewBag.Error</div>
+                    <div class="@((@Model.Rating >0) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                    <div class="@((@Model.Rating >1) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                    <div class="@((@Model.Rating >2) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                    <div class="@((@Model.Rating >3) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                    <div class="@((@Model.Rating >4) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                </div>
+                <br />
+                <div>@(Model.Price) <small>shekels</small></div>
+                <div><h3>Nutrition Information: <small>(for 100 g)</small> </h3></div>
+                <div class="control-label" for="pref-orderby">Fats: @(Model.Fats)</div>
+                <div class="control-label" for="pref-orderby">Energy: @(Model.Energy)</div>
+                <div class="control-label" for="pref-orderby">Protein: @(Model.Protein)</div>
+            </div>
+        </div>
+
+
+        <div class="col-xs-4 reviews-data">
+            <div class="detailBox">
+                <div class="titleBox">
+                    <label>Comments</label>
+                </div>
+                <!--add review form-->
+                <div class="commentBox">
+                    <form class="form-inline" id="myForm" role="form">
+                        <div class="form-group">
+                            <span class="fa fa-star unchecked" id="star1" onclick="starRating(this,1)"></span>
+                            <span class="fa fa-star unchecked" id="star2" onclick="starRating(this,2)"></span>
+                            <span class="fa fa-star unchecked" id="star3" onclick="starRating(this,3)"></span>
+                            <span class="fa fa-star unchecked" id="star4" onclick="starRating(this,4)"></span>
+                            <span class="fa fa-star unchecked" id="star5" onclick="starRating(this,5)"></span>
+                            <p id="alertOfReuiredRatingField" style="color:red"></p>
+                            <input id="comment" type="text" class="form-control" placeholder="Your comment" />
+                            <input id="name" type="text" class="form-control" placeholder="Your name">
+                            <input id="icecreamImage" type="text" class="form-control" placeholder="Icecream image" onblur="imaagaApiCall()">
+                            <p id="alertOfReuiredImageField" style="color:red"></p>
+                            <input id="yourImage" type="text" class="form-control" placeholder="Your image">
+                        </div>
+
+                        <div class="form-group">
+                            <input class="submitButton btn btn-default" type="button" value="Add" id=@((@Model.Id)) onclick="addReviewBtn(this)" />
+                        </div>
+
+                    </form>
+                </div>
+                <!--ALL Reviews-->
+                <div class="actionBox">
+                    <ul id="commentList" class="commentList">
+                        @{ if (Model.IceReview != null)
+                            {
+                                foreach (var review in Model.IceReview)
+                                {
+                                    <li>
+                                        <div class="commenterImage">
+                                            <img src="@(review.ImageUrlOfUser)" />
+                                        </div>
+                                        <div class="commentText">
+                                            <p> @(review.CommentedBy)</p>
+                                            <div>
+                                                <div class="@((review.Rating >0) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                                <div class="@((review.Rating >1) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                                <div class="@((review.Rating >2) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                                <div class="@((review.Rating >3) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                                <div class="@((review.Rating >4) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                            </div>
+                                            <div>
+                                                <p>
+                                                    @(review.Message)
+                                                </p>
+                                                <div class="zoom-less">
+                                                    <img src="@(review.ImageUrl)" width="60" height="70" />
+                                                </div>
+                                            </div>
+                                            <span class="date sub-text"> @(review.DateTimeStamp)</span>
+                                        </div>
+                                    </li>
+                                }
+                            }
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@{
+    ViewBag.Title = "Details";
+}

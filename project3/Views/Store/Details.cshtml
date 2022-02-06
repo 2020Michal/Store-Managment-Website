@@ -1,0 +1,340 @@
+﻿@model project3.Models.Store
+@Styles.Render("~/Content/styles.css")
+<script>
+
+    function showMapModal(mapBtn) {
+        var lat = mapBtn.dataset['lat'];
+        var lang = mapBtn.dataset['lang'];
+        var title = mapBtn.dataset['title'];
+        $("#mapModal").modal('show');
+        $('#mapModalTitle')[0].innerText = "";
+        $('#mapModalTitle')[0].append("Map " + title);
+        var mapProp = {
+            center: new google.maps.LatLng(lat, lang),
+            zoom: 15,
+        };
+
+        var map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+        var marker = new google.maps.Marker({
+            position: new google.maps.LatLng(lat, lang),
+            map: map,
+            title: title
+        });
+
+    }
+
+    function hideMapModal() {
+        $("#mapModal").modal('hide');
+    }
+
+    // redirect to icecream product page
+    function navToIceCream(iceBtn) {
+        window.location.href = `/IceCream/Details/${iceBtn.id}`;
+    }
+
+    function openIceCreamModal() {
+        $("#addIceModal").modal('show');
+    }
+
+    function hideIceModal() {
+        $("#addIceModal").modal('hide');
+    }
+
+    function addNewIce() {
+        var desc = $('#inputIceDescription').val();
+        var image = $('#inputIceImage').val();
+        var name = $('#inputIceName').val();
+        var price = $('#inputIcePrice').val();
+        var nutritionId = $('#inputIceNutritionId').val();
+        var fats = $('#inputIceFats').val();
+        var energy = $('#inputIceEnergy').val();
+        var protein = $('#inputIceProtein').val();
+        var currentUrl = window.location.href;
+        var storeId = currentUrl.substring(currentUrl.lastIndexOf('/') + 1, currentUrl.lastIndexOf('#'));
+
+
+        var icecream = {
+            Description: desc,
+            ImageUrl: image,
+            Name: name,
+            Price: price,
+            NutritionId: nutritionId,
+            Fats: fats,
+            Energy: energy,
+            Protein: protein,
+            StoreId: storeId,
+            Rating: 0
+        }
+        fetchNewIceCream(icecream);
+    }
+
+    function fetchNewIceCream(icecream) {
+        $.ajax({
+            type: "POST",
+            url: "/IceCream/Create",
+            data: JSON.stringify(icecream),
+            dataType: 'JSON',
+            contentType: "application/json; charest=utf-8",
+            success: function () {
+                window.location.reload();
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        })
+    }
+
+    //API CALL NUTRITION- find nutrition id by name
+    function apiCallFindNutritionId() {
+        var iceCreamName = $('#inputIceName').val();
+        iceCreamName = `+ice cream ${iceCreamName}`;
+        var lengthOfName = iceCreamName.length;
+        for (var i = 0; i < lengthOfName; i++) {
+            if (iceCreamName.charAt(i) == " ") {
+                iceCreamName = `${iceCreamName.substr(0, i + 1)}+${iceCreamName.substr(i + 1, iceCreamName.length + 1)}`;
+            }
+        }
+        var iceName = {
+            generalSearchInput: iceCreamName
+        };
+
+        fetchIceCreamName(iceName)
+    }
+
+    function fetchIceCreamName(iceName) {
+        $.ajax({
+            type: "Post",
+            data: JSON.stringify(iceName),
+            dataType: "json",
+            contentType: "application/json; charest=utf-8",
+            url: `https://api.nal.usda.gov/fdc/v1/search?api_key=p7B2vgRIlhyHDGPjxPNk96jDQGRM86g9LazVAqrn`,
+            success: function (results) {
+                var nutritionId = results.foods[0].fdcId;
+                $('#inputIceNutritionId').val(nutritionId);
+                apiCallFindNutValues();
+            },
+            error: function (error) {
+                console.log(error);
+                alert(error)
+            }
+        })
+    }
+
+    function apiCallByChangeId() {
+        $('#inputIceName').val("");
+        apiCallFindNutValues();
+    }
+
+    //API CALL NUTRITION- find nutrition values by id
+    function apiCallFindNutValues() {
+        var nutritionId = $('#inputIceNutritionId').val();
+
+        fetchNutritionId(nutritionId)
+    }
+
+    function fetchNutritionId(nutritionId) {
+        $.ajax({
+            type: 'GET',
+            async: false,
+            dataType: "json",
+            contentType: "application/json; charest=utf-8",
+            url: `https://api.nal.usda.gov/fdc/v1/${nutritionId}?api_key=p7B2vgRIlhyHDGPjxPNk96jDQGRM86g9LazVAqrn`,
+            success: function (results) {
+                if ($('#inputIceName').val() == "") {
+                    $('#inputIceName').val(results.description);
+                }
+                var food = results.foodNutrients;
+                var energy = '';
+                var protein = '';
+                var fats = '';
+
+                $.each(food, function () {
+                    if (this.nutrient.name == 'Energy'/* && this.nutrient.unitName == 'kcal'*/) {
+                        energy = this.amount;
+                    }
+
+                    if (this.nutrient.name == 'Protein') {
+                        protein = this.amount;
+                    }
+
+                    if (this.nutrient.name == 'Total lipid (fat)') {
+                        fats = this.amount;
+                    }
+                });
+                $('#inputIceFats').val(fats);
+                $('#inputIceEnergy').val(energy);
+                $('#inputIceProtein').val(protein);
+
+                document.getElementById("inputIceFats").disabled = true;
+                document.getElementById("inputIceEnergy").disabled = true;
+                document.getElementById("inputIceProtein").disabled = true;
+            },
+            error: function (error) {
+                console.log(error);
+                alert(error)
+            }
+
+        })
+
+    }
+
+</script>
+
+<!--add icecream modal-->
+<div class="modal fade" tabindex="-1" id="addIceModal"
+     data-keyboard="false" data-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    ×
+                </button>
+                <h4 class="modal-title">Add New IceCream</h4>
+            </div>
+            <div class="modal-body">
+                <form id="addIceForm">
+                    <div class="form-group">
+                        <input class="form-control" placeholder="Image"
+                               type="text" id="inputIceImage" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" type="text"
+                               placeholder="Name" id="inputIceName" onblur="apiCallFindNutritionId()" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" type="text"
+                               placeholder="Description" id="inputIceDescription" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" placeholder="Price"
+                               type="text" id="inputIcePrice" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" placeholder="Nutrition Id"
+                               type="text" id="inputIceNutritionId" onblur="apiCallByChangeId()" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" placeholder="Fats"
+                               type="text" id="inputIceFats" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" placeholder="Energy"
+                               type="text" id="inputIceEnergy" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" placeholder="Protein"
+                               type="text" id="inputIceProtein" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary button button4" onclick="addNewIce()">Add</button>
+                <button type="button" onclick="hideIceModal()" id="btnHideModal" class="btn btn-primary button button4">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--map modal of store-->
+<div class="modal fade" tabindex="-1" id="mapModal"
+     data-keyboard="false" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    ×
+                </button>
+                <h4 class="modal-title" id="mapModalTitle"></h4>
+                <p id="mapModalStoreAddress"></p>
+            </div>
+            <div class="modal-body">
+                <div id="googleMap" style="width:100%;height:400px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="hideMapModal()" id="btnHideModal" class="btn btn-primary button button4">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--Store Details-->
+<div class="container">
+    <div class="row">
+        <div class="col-xs-3 store-dtls">
+            <div class="col-md-8 item-photo zoom-less">
+                <img style="width:170px;" src="@(Model.ImageUrl)" />
+            </div>
+            <div class="col-xs-12" style="border:0px solid gray">
+                <h3> @(Model.Title)</h3>
+                <div>
+                    <h4>where are we?</h4>
+                </div>
+                <div class="control-label" @(Model.Address)></div>
+                <a class='btn btn-info btn-xs' data-lat="@(Model.Lat)" data-lang="@(Model.Lang)" data-title="@(Model.Title)" id="showmapBtn" onclick="showMapModal(this)" href="#">
+                    Show On Map<i class="icon-chevron-sign-right"></i>
+                </a>
+                <h6>Contact Us: @(Model.PhoneNum)</h6>
+            </div>
+        </div>
+
+        <!--list of all icecreams in the current store-->
+        <a href="#" class="btn btn-primary btn-xs pull-right" onclick="openIceCreamModal()">
+            <i class="icon-plus"></i>Add Ice Cream
+        </a>
+        <div class="col-xs-9 details-data">
+            <h3 style="text-align:center">Our Ice Creams</h3>
+            <table class="table table-striped custab details-tbl">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th class="dtls-name">Name</th>
+                        <th class="dtls-desc">Description</th>
+                        <th>Rating</th>
+                        <th>Price</th>
+                        <th>Nutrition Id</th>
+                        <th class="text-center">Action</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                @{ if (Model.ListOfIce != null)
+                    {
+                        foreach (var ice in Model.ListOfIce)
+                        {
+                            <tr>
+                                <td class="zoom"><img width="60" height="70" src="@(ice.ImageUrl)" /></td>
+                                <td>@(ice.Name)</td>
+                                <td>@(ice.Description)</td>
+                                <td>
+                                    <div>
+                                        <div class="@((ice.Rating >0) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                        <div class="@((ice.Rating >1) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                        <div class="@((ice.Rating >2) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                        <div class="@((ice.Rating >3) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                        <div class="@((ice.Rating >4) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                                    </div>
+                                    <div><small>(@(ice.Rating))</small></div>
+                                </td>
+                                <td>@(ice.Price)</td>
+                                <td>@(ice.NutritionId)</td>
+                                <td class="text-center">
+                                    <a class='btn btn-info btn-xs' onclick="navToIceCream(this)" id="@(ice.Id)" href="#">
+                                        Show Details<i class="icon-chevron-sign-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </table>
+        </div>
+    </div>
+</div>
+
+@{
+    ViewBag.Title = "Details";
+}
+

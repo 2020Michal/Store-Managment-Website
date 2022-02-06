@@ -1,0 +1,342 @@
+﻿@model IEnumerable<project3.Models.IceCream>
+@Styles.Render("~/Content/styles.css")
+<script type="text/javascript">
+
+    function showMap(mapBtn) {
+        var storeId = `${mapBtn.id}`;
+        var idOfStore = {
+            Id: storeId
+        }
+        fetchStore(idOfStore)
+    }
+
+    //Show Store Map Of iceCream
+    function fetchStore(idOfStore) {
+        $.ajax({
+            type: "POST",
+            url: "/Store/GetStore",
+            data: JSON.stringify(idOfStore),
+            dataType: "JSON",
+            contentType: "application/json; charest=utf-8",
+            success: function (data)
+            {
+                var lat = data.Lat;
+                var lang = data.Lang;
+                var title = data.Title;
+                var address = data.Address;
+                var phone = data.PhoneNum;
+                $("#mapModal").modal('show');
+                $('#mapModalTitle')[0].innerText = "";
+                $('#mapModalTitle')[0].append("Map " + title);
+                $('#mapModalStoreAddress')[0].innerText = "";
+                $('#mapModalStoreAddress')[0].append(address);
+                $('#mapModalStorePhone')[0].innerText = "";
+                $('#mapModalStorePhone')[0].append(phone);
+
+                var mapProp =
+                {
+                    center: new google.maps.LatLng(lat, lang),
+                    zoom: 15,
+                };
+
+                var map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+
+                var marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(lat, lang),
+                    map: map,
+                    title: title
+                });
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        })
+    }
+
+    function hideModal() {
+        $("#mapModal").modal('hide');
+    }
+
+    // redirect to icecream product page
+    function navToIceCream(iceCreamBtn) {
+        window.location.href = `/IceCream/Details/${iceCreamBtn.id}`;
+    }
+
+    /*
+     * filter from icecream collection
+     */
+    function filterIceCreams() {
+        var name = $("#name-item").val();
+        var desc = $("#desc-item").val();
+        var minRate = $("#min-Rating").val();
+        var maxRate = $("#max-Rating").val();
+        var fats = $("#fats-item").val();
+        var energy = $("#energy-item").val();
+        var protein = $("#protein-item").val();
+
+        var filter = {
+            Description: desc,
+            Name: name,
+            MinRating: minRate,
+            MaxRating: maxRate,
+            Fats: fats,
+            Energy: energy,
+            Protein: protein
+        }
+        fetchIceCreams(filter);
+    }
+
+    function fetchIceCreams(filter) {
+        $.ajax({
+            type: "POST",
+            url: "/IceCream/IcecreamsByFilter",
+            data: JSON.stringify(filter),
+            dataType: "JSON",
+            contentType: "application/json; charest=utf-8",
+            success: function (data) {
+                var $iceCreamList = $("#iceCreamList");
+                $iceCreamList.html("");
+                var iceCream = ` <thead><tr>
+                        <th>Ice Cream Image</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Rating</th>
+                        <th>Price <small>(shekels)</small></th>
+                        <th>Fats</th>
+                        <th>Energy</th>
+                        <th>Protein</th>
+                        <th class="text-center"></th>
+                        <th></th>
+                    </tr></thead>`;
+
+                $.each(data, function (index, value) {
+
+                    iceCream += `<tr>
+                            <td class="zoom"><img width="60" height="70" src="${value.ImageUrl}" /></td>
+                            <td>${value.Name}</td>
+                            <td class="dtls-desc">${value.Description}</td>
+
+                           <td><div class="search-rate">`;
+                    if (value.Rating > 0) {
+                        iceCream += `<div class="fa fa-star checked " ></div>`
+                    }
+
+                    else {
+                        iceCream += `<div class="fa fa-star unchecked" ></div>`
+
+                    }
+                    if (value.Rating > 1) {
+                        iceCream += `<div class="fa fa-star checked " ></div>`
+                    }
+
+                    else {
+                        iceCream += `<div class="fa fa-star unchecked" ></div>`
+
+                    }
+                    if (value.Rating > 2) {
+                        iceCream += `<div class="fa fa-star checked " ></div>`
+                    }
+
+                    else {
+                        iceCream += `<div class="fa fa-star unchecked" ></div>`
+
+                    }
+                    if (value.Rating > 3) {
+                        iceCream += `<div class="fa fa-star checked " ></div>`
+                    }
+
+                    else {
+                        iceCream += `<div class="fa fa-star unchecked" ></div>`
+
+                    }
+                    if (value.Rating > 4) {
+                        iceCream += `<div class="fa fa-star checked " ></div>`
+                    }
+
+                    else {
+                        iceCream += `<div class="fa fa-star unchecked" ></div>`
+
+                    }
+                    iceCream +=
+                        `<div><small>(${value.Rating})</small></div>
+                         </div>
+                            </td>
+                            <td>${value.Price}</td>
+                            <td>${value.Fats}</td>
+                            <td>${value.Energy}</td>
+                            <td>${value.Protein}</td>
+                            <td class="text-center">
+                                 <a class='btn btn-info btn-xs' id="${value.StoreId}" onclick="showMap(this)" href="#">
+                                 Show On Map<i class="fas fa-map-marker-alt"></i>
+                                </a>
+                            </td>
+                            <td class="text-center">
+                                <a class='btn btn-info btn-xs' onclick="navToIceCream(this)" id="${value.Id}" href="#">
+                                    More Details<i class="icon-chevron-sign-right"></i>
+                                </a>
+                            </td>
+                        </tr>`
+                })
+                $iceCreamList.append(iceCream);
+                console.log($iceCreamList);
+                iceCream = '';
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        })
+    }
+
+</script>
+
+<div class="container-fluid">
+    <div class="row">
+        <h3 class="font_9" style="text-align:center; line-height:1.875em;">
+            <span style="color:hotpink">"Life is better with Ice Cream"</span><br />
+            <span style="font-size: large">Search Ice Cream</span>
+        </h3>
+
+        <div>
+            <!-- search form -->
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <form class="form" role="form">
+                        <div class="form-group col-xs-2 col-md-2">
+                            <label class="control-name" for="pref-perpage">Name</label>
+                            <input type="text" id="name-item" class="form-control" />
+                        </div>
+                        <div class="form-group col-xs-2 col-md-2">
+                            <label class="control-name" for="pref-perpage">Description</label>
+                            <input type="text" id="desc-item" class="form-control" />
+                        </div>
+                        <div class="form-group col-xs-2 col-md-2">
+                            <label class="control-label" for="pref-search">Min Rating</label>
+                            <select id="min-Rating" class="form-control">
+                                <option selected value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-xs-2 col-md-2">
+                            <label class="control-label" for="pref-orderby">Max Rating</label>
+                            <select id="max-Rating" class="form-control">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option selected value="5">5</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-xs-2 col-md-2">
+                            <label class="control-label" for="pref-orderby">Max Fats <small>(100 g)</small></label>
+                            <input id="fats-item" class="form-control text-box single-line" type="number" min="1">
+                        </div>
+                        <div class="form-group col-xs-2 col-md-2">
+                            <label class="control-label" for="pref-orderby">Max Energy <small>(100 g)</small></label>
+                            <input id="energy-item" class="form-control text-box single-line" type="number" min="1">
+                        </div>
+                        <div class="form-group col-xs-2 col-md-2">
+                            <label class="control-protein" for="pref-orderby">Max Protein <small>(100 g)</small></label>
+                            <input id="protein-item" class="form-control text-box single-line" type="number" min="1">
+                        </div>
+                        <div class="col-md-1">
+                            <input type="button" value="Search" onclick="filterIceCreams()" />
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--All Products List-->
+    <div class="row col-md-12 custyle">
+        <table id="iceCreamList" class="table table-striped custab">
+            <thead>
+                <tr>
+                    <th>Ice Cream Image</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Rating</th>
+                    <th>Price <small>(shekels)</small></th>
+                    <th>Fats</th>
+                    <th>Energy</th>
+                    <th>Protein</th>
+                    <th class="text-center"></th>
+                    <th></th>
+                </tr>
+            </thead>
+            @foreach (var icecream in Model)
+            {
+                <tr>
+                    <td class="zoom"><img width="60" height="70" src="@(icecream.ImageUrl)" /></td>
+                    <td>@(icecream.Name)</td>
+                    <td class="dtls-desc">@(icecream.Description)</td>
+                    <td>
+                        <div class="search-rate">
+                            <div class="@((icecream.Rating >0) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                            <div class="@((icecream.Rating >1) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                            <div class="@((icecream.Rating >2) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                            <div class="@((icecream.Rating >3) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                            <div class="@((icecream.Rating >4) ? "fa fa-star checked" : "fa fa-star unchecked")"></div>
+                        </div>
+                        <div><small>(@(icecream.Rating))</small></div>
+                    </td>
+                    <td>@(icecream.Price)</td>
+                    <td>@(icecream.Fats)</td>
+                    <td>@(icecream.Energy)</td>
+                    <td>@(icecream.Protein)</td>
+                    <td class="text-center">
+                        <a class='btn btn-info btn-xs' id="@(icecream.StoreId)" onclick="showMap(this)" href="#">
+                            Show On Map<i class="fas fa-map-marker-alt"></i>
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <a class='btn btn-info btn-xs' onclick="navToIceCream(this)" id="@(icecream.Id)" href="#">
+                            More Details<i class="icon-chevron-sign-right"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+
+
+        </table>
+    </div>
+</div>
+
+<!--map modal of store-->
+<div class="modal fade" tabindex="-1" id="mapModal"
+     data-keyboard="false" data-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    ×
+                </button>
+                <h4 class="modal-title" id="mapModalTitle"></h4>
+                <p id="mapModalStoreAddress"></p>
+                <p id="mapModalStorePhone"></p>
+            </div>
+            <div class="modal-body">
+                <div id="googleMap" style="width:100%;height:400px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="hideModal()" id="btnHideModal" class="btn btn-primary button button4">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@{
+    ViewBag.Title = "Home Page";
+}
+<style>
+    body {
+        background-color: #fcdfe4;
+    }
+</style>
