@@ -1,5 +1,4 @@
 # Store-Managment-Website
-# Store_Managment_Website
 This project simulates website of IceCream store.
 The Project in MVC architecture, in C#, CSS, Html
 and JavaScript. 
