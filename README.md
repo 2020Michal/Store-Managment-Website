@@ -3,6 +3,10 @@ This project simulates website of IceCream store.
 The Project in MVC architecture, in C#, CSS, Html
 and JavaScript. 
 
+steps before running the project:
+
+In the storeController in Create function put your bing map key in the currect place: "&key=Your_Key"
+
 ![image](https://user-images.githubusercontent.com/72125926/126214595-5b29af09-8b8f-4da5-afb8-5624d906aa0d.png)
 
 ![image](https://user-images.githubusercontent.com/72125926/126214682-2ecf239d-7218-42dd-aca7-57325349eff7.png)
@@ -11,6 +15,4 @@ and JavaScript.
 
 
 
-steps before running the project:
 
-In the storeController in Create function put your bing map key in the currect place: "&key=Your_Key"
